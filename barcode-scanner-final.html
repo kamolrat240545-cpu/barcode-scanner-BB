@@ -1,0 +1,2211 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width,
+      initial-scale=1.0,
+      maximum-scale=1.0,
+      user-scalable=no">
+
+<title>ระบบสแกน Barcode / SKU</title>
+
+<!-- ZXing สำหรับอ่าน Barcode / QR -->
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family:
+    Arial,
+    "Noto Sans Thai",
+    "Noto Sans Myanmar",
+    sans-serif;
+  background: #f4f6f8;
+  color: #202124;
+}
+
+.container {
+  width: 100%;
+  max-width: 1100px;
+  margin: auto;
+  padding: 15px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.language {
+  padding: 9px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: white;
+}
+
+.section {
+  background: white;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 7px rgba(0,0,0,.08);
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+select,
+input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  outline: none;
+  background: white;
+}
+
+input:focus,
+select:focus {
+  border-color: #1976d2;
+}
+
+.nickname {
+  margin-top: 8px;
+  font-size: 15px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.camera-box {
+  width: 100%;
+  height: 260px;
+  background: #111;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-box video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scan-frame {
+  position: absolute;
+  width: 75%;
+  height: 35%;
+  border: 3px solid #00e676;
+  border-radius: 8px;
+  left: 12.5%;
+  top: 32.5%;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 9999px rgba(0,0,0,.15);
+}
+
+.camera-message {
+  position: absolute;
+  color: white;
+  text-align: center;
+  font-size: 17px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  padding: 11px 15px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.btn-blue {
+  background: #1976d2;
+  color: white;
+}
+
+.btn-green {
+  background: #16a34a;
+  color: white;
+}
+
+.btn-red {
+  background: #dc2626;
+  color: white;
+}
+
+.btn-gray {
+  background: #e5e7eb;
+  color: #333;
+}
+
+.full {
+  width: 100%;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.input-row input {
+  flex: 1;
+}
+
+.input-row button {
+  white-space: nowrap;
+}
+
+.current-barcode {
+  background: #edf6ff;
+  border: 1px solid #b9dcff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.current-barcode-label {
+  color: #555;
+  font-size: 13px;
+}
+
+.current-barcode-value {
+  font-size: 21px;
+  font-weight: bold;
+  color: #1565c0;
+  word-break: break-all;
+  margin-top: 4px;
+}
+
+.status {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  display: none;
+}
+
+.status.success {
+  display: block;
+  background: #ecfdf3;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.status.error {
+  display: block;
+  background: #fff1f2;
+  color: #b91c1c;
+  border: 1px solid #fecdd3;
+}
+
+.status.warning {
+  display: block;
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 9px;
+  font-size: 14px;
+}
+
+th {
+  background: #edf4ff;
+}
+
+.empty {
+  text-align: center;
+  color: #777;
+}
+
+.save-area {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.info {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.info ol {
+  margin-bottom: 0;
+  padding-left: 22px;
+}
+
+.modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-bg.show {
+  display: flex;
+}
+
+.modal {
+  width: min(420px, 90%);
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  text-align: center;
+}
+
+.modal-icon {
+  font-size: 55px;
+  color: #dc2626;
+}
+
+.modal h2 {
+  margin: 5px 0 10px;
+}
+
+.small {
+  font-size: 13px;
+  color: #666;
+}
+
+@media (max-width: 750px) {
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header h1 {
+    font-size: 21px;
+  }
+
+  .input-row {
+    flex-direction: column;
+  }
+
+  .camera-box {
+    height: 300px;
+  }
+
+  .save-area {
+    display: block;
+  }
+
+  .save-area button {
+    width: 100%;
+  }
+}
+</style>
+</head>
+
+
+<body>
+
+<div class="container">
+
+  <!-- =====================================================
+       HEADER
+       ===================================================== -->
+
+  <div class="header">
+
+    <h1>
+      📦
+      <span data-lang="title">
+        ระบบสแกน Barcode / SKU
+      </span>
+    </h1>
+
+    <select id="language" class="language">
+      <option value="th">🇹🇭 ไทย</option>
+      <option value="zh">🇨🇳 中文</option>
+      <option value="en">🇬🇧 English</option>
+      <option value="my">🇲🇲 မြန်မာ</option>
+    </select>
+
+  </div>
+
+
+  <!-- =====================================================
+       เลือกผู้สแกน
+       ===================================================== -->
+
+  <div class="section">
+
+    <div class="section-title">
+      👤 เลือกผู้สแกน
+    </div>
+
+    <select id="employee">
+      <option value="กัลย์สุดา บุญยืน|กัลย์สุดา บุญยืน">
+        กัลย์สุดา บุญยืน
+      </option>
+
+      <option value="จุรีพร สุขพิพัฒน์|จุรีพร สุขพิพัฒน์">
+        จุรีพร สุขพิพัฒน์
+      </option>
+
+      <option value="วันวิสา เจริญโสภณ|วันวิสา เจริญโสภณ">
+        วันวิสา เจริญโสภณ
+      </option>
+
+      <option value="ธัญวรัตน์ บุญวังทอง|ธัญวรัตน์ บุญวังทอง">
+        ธัญวรัตน์ บุญวังทอง
+      </option>
+
+      <option value="น้ำผึ้ง วรรณชิโนรส|น้ำผึ้ง วรรณชิโนรส">
+        น้ำผึ้ง วรรณชิโนรส
+      </option>
+
+      <option value="เจต มานะพิมพ์|เจต มานะพิมพ์">
+        เจต มานะพิมพ์
+      </option>
+
+      <option value="ทิฆัมพร ละเอียด|ทิฆัมพร ละเอียด">
+        ทิฆัมพร ละเอียด
+      </option>
+
+      <option value="HTOO|HTOO">
+        HTOO
+      </option>
+
+      <option value="EH POE SAI|EH POE SAI">
+        EH POE SAI
+      </option>
+
+      <option value="น้ำฝน ยังเอี่ยม|น้ำฝน ยังเอี่ยม">
+        น้ำฝน ยังเอี่ยม
+      </option>
+
+      <option value="SAW DEN|SAW DEN">
+        SAW DEN
+      </option>
+
+      <option value="SAW MYINT HTUN|SAW MYINT HTUN">
+        SAW MYINT HTUN
+      </option>
+
+      <option value="SOE WIN|SOE WIN">
+        SOE WIN
+      </option>
+
+      <option value="SAW MU KA PAW|SAW MU KA PAW">
+        SAW MU KA PAW
+      </option>
+
+      <option value="KYAW WIN NAING|KYAW WIN NAING">
+        KYAW WIN NAING
+      </option>
+
+      <option value="SAW SHEE|SAW SHEE">
+        SAW SHEE
+      </option>
+
+      <option value="ชลิตา จกัลยา|ชลิตา จกัลยา">
+        ชลิตา จกัลยา
+      </option>
+
+      <option value="อมรรัตน์ เรืองลอยขำ|อมรรัตน์ เรืองลอยขำ">
+        อมรรัตน์ เรืองลอยขำ
+      </option>
+
+      <option value="SAW TAR SI PAR|SAW TAR SI PAR">
+        SAW TAR SI PAR
+      </option>
+
+      <option value="KAR KAR|KAR KAR">
+        KAR KAR
+      </option>
+
+      <option value="วันวิสา ลัภขุนทด|วันวิสา ลัภขุนทด">
+        วันวิสา ลัภขุนทด
+      </option>
+
+      <option value="อารี สูงขาว|อารี สูงขาว">
+        อารี สูงขาว
+      </option>
+
+      <option value="หนูไกร อำภัยรัตน์|หนูไกร อำภัยรัตน์">
+        หนูไกร อำภัยรัตน์
+      </option>
+
+      <option value="ปวีณา หลอดทอง|ปวีณา หลอดทอง">
+        ปวีณา หลอดทอง
+      </option>
+
+      <option value="เอื้องแก้ว ธีรัชธรรมสรณ์|เอื้องแก้ว ธีรัชธรรมสรณ์">
+        เอื้องแก้ว ธีรัชธรรมสรณ์
+      </option>
+
+      <option value="จีราวัฒน์ อ้อนวอน|จีราวัฒน์ อ้อนวอน">
+        จีราวัฒน์ อ้อนวอน
+      </option>
+
+      <option value="THET HTAR AYE|THET HTAR AYE">
+        THET HTAR AYE
+      </option>
+
+      <option value="SOE MIN OO|SOE MIN OO">
+        SOE MIN OO
+      </option>
+
+      <option value="HAN PHYO WAI|HAN PHYO WAI">
+        HAN PHYO WAI
+      </option>
+
+      <option value="ZAYAR MYLNT|ZAYAR MYLNT">
+        ZAYAR MYLNT
+      </option>
+
+    </select>
+
+    <div class="nickname">
+      ชื่อเล่น:
+      <b id="nickname">ซาเลน</b>
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       วิธีใช้งาน
+       ===================================================== -->
+
+  <div class="section info">
+
+    <div class="section-title">
+      🔵 วิธีใช้งาน
+    </div>
+
+    <ol>
+
+      <li>
+        สแกนหรือพิมพ์ Barcode / เลขพัสดุ
+      </li>
+
+      <li>
+        Barcode 1 ตัว สามารถเพิ่ม SKU ได้หลายรายการ
+      </li>
+
+      <li>
+        หาก Barcode ซ้ำ ระบบจะแจ้งเตือนและไม่อนุญาตให้เพิ่ม
+      </li>
+
+      <li>
+        เมื่อเสร็จแล้วกดบันทึกข้อมูล
+      </li>
+
+    </ol>
+
+  </div>
+
+
+  <!-- =====================================================
+       BARCODE + SKU
+       ===================================================== -->
+
+  <div class="grid">
+
+
+    <!-- ===================================================
+         BARCODE
+         =================================================== -->
+
+    <div class="section">
+
+      <div class="section-title">
+        1️⃣ สแกน Barcode / เลขพัสดุ
+      </div>
+
+      <div class="camera-box">
+
+        <video
+          id="barcodeVideo"
+          autoplay
+          muted
+          playsinline>
+        </video>
+
+        <div class="scan-frame"></div>
+
+        <div
+          id="barcodeMessage"
+          class="camera-message">
+
+          📷<br>
+          กดปุ่มเปิดกล้อง
+        </div>
+
+      </div>
+
+      <button
+        id="barcodeCameraButton"
+        class="btn-blue full"
+        style="margin-top:10px">
+
+        📷 เปิดกล้องสแกน Barcode
+
+      </button>
+
+
+      <div class="input-row">
+
+        <input
+          id="barcodeInput"
+          type="text"
+          autocomplete="off"
+          placeholder="พิมพ์ Barcode / เลขพัสดุ">
+
+        <button
+          id="barcodeAddButton"
+          class="btn-blue">
+
+          เพิ่ม Barcode
+
+        </button>
+
+      </div>
+
+
+      <div id="barcodeStatus" class="status"></div>
+
+    </div>
+
+
+
+    <!-- ===================================================
+         SKU
+         =================================================== -->
+
+    <div class="section">
+
+      <div class="section-title">
+        2️⃣ สแกน SKU
+      </div>
+
+
+      <div class="current-barcode">
+
+        <div class="current-barcode-label">
+          Barcode ปัจจุบัน
+        </div>
+
+        <div
+          id="currentBarcode"
+          class="current-barcode-value">
+
+          -
+
+        </div>
+
+        <div
+          id="barcodeTime"
+          class="small">
+
+          -
+
+        </div>
+
+      </div>
+
+
+      <div class="camera-box">
+
+        <video
+          id="skuVideo"
+          autoplay
+          muted
+          playsinline>
+        </video>
+
+        <div class="scan-frame"></div>
+
+        <div
+          id="skuMessage"
+          class="camera-message">
+
+          📷<br>
+          กดปุ่มเปิดกล้อง SKU
+
+        </div>
+
+      </div>
+
+
+      <button
+        id="skuCameraButton"
+        class="btn-green full"
+        style="margin-top:10px">
+
+        📷 เปิดกล้องสแกน SKU
+
+      </button>
+
+
+      <div class="input-row">
+
+        <input
+          id="skuInput"
+          type="text"
+          autocomplete="off"
+          placeholder="พิมพ์ SKU">
+
+        <button
+          id="skuAddButton"
+          class="btn-green">
+
+          เพิ่ม SKU
+
+        </button>
+
+      </div>
+
+
+      <div id="skuStatus" class="status"></div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       SKU LIST
+       ===================================================== -->
+
+  <div class="section">
+
+    <div class="section-title">
+
+      ☑️ รายการ SKU ภายใต้ Barcode นี้
+      (<span id="skuCount">0</span>)
+
+    </div>
+
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>#</th>
+
+          <th>รหัส SKU</th>
+
+          <th>เวลา</th>
+
+          <th>จัดการ</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody id="skuTable">
+
+        <tr>
+
+          <td
+            colspan="4"
+            class="empty">
+
+            ยังไม่มีรายการ
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+
+    <div class="save-area">
+
+      <button
+        id="saveButton"
+        class="btn-green"
+        disabled>
+
+        💾 บันทึกข้อมูล
+
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       HISTORY
+       ===================================================== -->
+
+  <div class="section">
+
+    <div class="section-title">
+
+      🕘 ประวัติการสแกนล่าสุด
+
+    </div>
+
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>#</th>
+          <th>เวลา</th>
+          <th>ผู้สแกน</th>
+          <th>ประเภท</th>
+          <th>ข้อมูล</th>
+          <th>หมายเหตุ</th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody id="historyTable">
+
+        <tr>
+
+          <td
+            colspan="6"
+            class="empty">
+
+            ยังไม่มีข้อมูล
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>
+
+
+<!-- =======================================================
+     DUPLICATE MODAL
+     ======================================================= -->
+
+<div
+  id="duplicateModal"
+  class="modal-bg">
+
+  <div class="modal">
+
+    <div class="modal-icon">
+      ✕
+    </div>
+
+    <h2>
+      Barcode นี้ถูกสแกนแล้ว!
+    </h2>
+
+    <p id="duplicateText"></p>
+
+    <button
+      id="duplicateClose"
+      class="btn-blue">
+
+      ตกลง
+
+    </button>
+
+  </div>
+
+</div>
+
+
+
+<script>
+
+/* ==========================================================
+   ตัวแปรระบบ
+   ========================================================== */
+
+let currentBarcode = "";
+let currentBarcodeTime = "";
+
+let skuList = [];
+
+let historyList = [];
+
+let usedBarcodes = new Set();
+
+let barcodeReader = null;
+let skuReader = null;
+
+let barcodeScanning = false;
+let skuScanning = false;
+
+
+/* ==========================================================
+   ฟังก์ชันเวลา
+   ========================================================== */
+
+function getTime() {
+
+  const d = new Date();
+
+  return d.toLocaleString(
+    "th-TH",
+    {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false
+    }
+  );
+
+}
+
+
+/* ==========================================================
+   พนักงาน
+   ========================================================== */
+
+document
+  .getElementById("employee")
+  .addEventListener(
+    "change",
+    updateNickname
+  );
+
+
+function updateNickname() {
+
+  const value =
+    document.getElementById("employee").value;
+
+  const parts = value.split("|");
+
+  document.getElementById(
+    "nickname"
+  ).textContent =
+    parts[1] || "-";
+
+}
+
+
+/* ==========================================================
+   แสดงสถานะ
+   ========================================================== */
+
+function showStatus(
+  elementId,
+  message,
+  type
+) {
+
+  const el =
+    document.getElementById(elementId);
+
+  el.textContent = message;
+
+  el.className =
+    "status " + type;
+
+}
+
+
+/* ==========================================================
+   Barcode ซ้ำ
+   ========================================================== */
+
+function isBarcodeDuplicate(code) {
+
+  code = String(code).trim();
+
+  if (!code) {
+    return false;
+  }
+
+  return usedBarcodes.has(code);
+
+}
+
+
+/* ==========================================================
+   แจ้งเตือน Barcode ซ้ำ
+   ========================================================== */
+
+function showDuplicateBarcode(code) {
+
+  document.getElementById(
+    "duplicateText"
+  ).textContent =
+    "Barcode: " + code +
+    "\n\nระบบไม่อนุญาตให้เพิ่ม Barcode ซ้ำ";
+
+  document
+    .getElementById("duplicateModal")
+    .classList.add("show");
+
+}
+
+
+/* ==========================================================
+   ปิดแจ้งเตือน
+   ========================================================== */
+
+document
+  .getElementById("duplicateClose")
+  .addEventListener(
+    "click",
+    function() {
+
+      document
+        .getElementById("duplicateModal")
+        .classList.remove("show");
+
+    }
+  );
+
+
+/* ==========================================================
+   เพิ่ม Barcode
+   ========================================================== */
+
+function addBarcode(code) {
+
+  code =
+    String(code || "")
+      .trim();
+
+  if (!code) {
+
+    showStatus(
+      "barcodeStatus",
+      "กรุณาสแกนหรือพิมพ์ Barcode ก่อน",
+      "error"
+    );
+
+    return false;
+
+  }
+
+
+  /*
+   * ตรวจ Barcode ซ้ำ
+   */
+
+  if (isBarcodeDuplicate(code)) {
+
+    showDuplicateBarcode(code);
+
+    document
+      .getElementById("barcodeInput")
+      .select();
+
+    return false;
+
+  }
+
+
+  /*
+   * หยุดกล้อง Barcode
+   */
+
+  stopBarcodeCamera();
+
+
+  /*
+   * ตั้ง Barcode ปัจจุบัน
+   */
+
+  currentBarcode = code;
+
+  currentBarcodeTime = getTime();
+
+  /*
+   * Barcode นี้ถูกใช้แล้วทันที
+   */
+
+  usedBarcodes.add(code);
+
+
+  /*
+   * เริ่ม SKU ใหม่
+   */
+
+  skuList = [];
+
+
+  /*
+   * แสดง Barcode
+   */
+
+  document
+    .getElementById("currentBarcode")
+    .textContent =
+    currentBarcode;
+
+  document
+    .getElementById("barcodeTime")
+    .textContent =
+    "เวลา: " +
+    currentBarcodeTime;
+
+
+  document
+    .getElementById("barcodeInput")
+    .value = "";
+
+
+  /*
+   * เพิ่มประวัติ
+   */
+
+  addHistory(
+    "Barcode",
+    code,
+    "เริ่มรายการใหม่"
+  );
+
+
+  renderSku();
+
+  updateSaveButton();
+
+
+  showStatus(
+    "barcodeStatus",
+    "✓ Barcode พร้อมใช้งาน สามารถเพิ่ม SKU ได้",
+    "success"
+  );
+
+
+  return true;
+
+}
+
+
+/* ==========================================================
+   ปุ่มเพิ่ม Barcode
+   ========================================================== */
+
+document
+  .getElementById("barcodeAddButton")
+  .addEventListener(
+    "click",
+    function() {
+
+      addBarcode(
+        document
+          .getElementById("barcodeInput")
+          .value
+      );
+
+    }
+  );
+
+
+/* ==========================================================
+   Enter Barcode
+   ========================================================== */
+
+document
+  .getElementById("barcodeInput")
+  .addEventListener(
+    "keydown",
+    function(e) {
+
+      if (e.key === "Enter") {
+
+        addBarcode(this.value);
+
+      }
+
+    }
+  );
+
+
+/* ==========================================================
+   เพิ่ม SKU
+   ========================================================== */
+
+function addSku(code) {
+
+  if (!currentBarcode) {
+
+    showStatus(
+      "skuStatus",
+      "กรุณาสแกน Barcode ก่อน",
+      "error"
+    );
+
+    return false;
+
+  }
+
+
+  code =
+    String(code || "")
+      .trim();
+
+
+  if (!code) {
+
+    showStatus(
+      "skuStatus",
+      "กรุณาสแกนหรือพิมพ์ SKU",
+      "error"
+    );
+
+    return false;
+
+  }
+
+
+  /*
+   * ตรวจ SKU ซ้ำ
+   */
+
+  if (
+    skuList
+      .map(x => x.toLowerCase())
+      .includes(code.toLowerCase())
+  ) {
+
+    showStatus(
+      "skuStatus",
+      "SKU นี้มีอยู่ในรายการแล้ว",
+      "error"
+    );
+
+    document
+      .getElementById("skuInput")
+      .select();
+
+    return false;
+
+  }
+
+
+  skuList.push(code);
+
+
+  addHistory(
+    "SKU",
+    code,
+    "Barcode: " + currentBarcode
+  );
+
+
+  document
+    .getElementById("skuInput")
+    .value = "";
+
+
+  renderSku();
+
+  updateSaveButton();
+
+
+  showStatus(
+    "skuStatus",
+    "✓ เพิ่ม SKU สำเร็จ",
+    "success"
+  );
+
+
+  return true;
+
+}
+
+
+/* ==========================================================
+   ปุ่มเพิ่ม SKU
+   ========================================================== */
+
+document
+  .getElementById("skuAddButton")
+  .addEventListener(
+    "click",
+    function() {
+
+      addSku(
+        document
+          .getElementById("skuInput")
+          .value
+      );
+
+    }
+  );
+
+
+/* ==========================================================
+   Enter SKU
+   ========================================================== */
+
+document
+  .getElementById("skuInput")
+  .addEventListener(
+    "keydown",
+    function(e) {
+
+      if (e.key === "Enter") {
+
+        addSku(this.value);
+
+      }
+
+    }
+  );
+
+
+/* ==========================================================
+   แสดงรายการ SKU
+   ========================================================== */
+
+function renderSku() {
+
+  const table =
+    document.getElementById(
+      "skuTable"
+    );
+
+
+  document.getElementById(
+    "skuCount"
+  ).textContent =
+    skuList.length;
+
+
+  if (!skuList.length) {
+
+    table.innerHTML = `
+      <tr>
+        <td colspan="4" class="empty">
+          ยังไม่มีรายการ
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  table.innerHTML =
+    skuList
+      .map(
+        (sku, index) => {
+
+          return `
+            <tr>
+
+              <td>
+                ${index + 1}
+              </td>
+
+              <td>
+                ${escapeHtml(sku)}
+              </td>
+
+              <td>
+                ${getTime()}
+              </td>
+
+              <td>
+
+                <button
+                  class="btn-red"
+                  onclick="removeSku(${index})">
+
+                  ลบ
+
+                </button>
+
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* ==========================================================
+   ลบ SKU
+   ========================================================== */
+
+function removeSku(index) {
+
+  skuList.splice(
+    index,
+    1
+  );
+
+  renderSku();
+
+  updateSaveButton();
+
+}
+
+
+/* ==========================================================
+   ปุ่ม Save
+   ========================================================== */
+
+function updateSaveButton() {
+
+  document
+    .getElementById("saveButton")
+    .disabled =
+    !currentBarcode ||
+    skuList.length === 0;
+
+}
+
+
+/* ==========================================================
+   ประวัติ
+   ========================================================== */
+
+function addHistory(
+  type,
+  value,
+  note
+) {
+
+  const employee =
+    document
+      .getElementById("employee")
+      .value
+      .split("|");
+
+
+  historyList.unshift({
+
+    time: getTime(),
+
+    employee:
+      employee[0] || "-",
+
+    nickname:
+      employee[1] || "-",
+
+    type: type,
+
+    value: value,
+
+    note: note || "-"
+
+  });
+
+
+  /*
+   * เก็บแค่ 100 รายการล่าสุด
+   */
+
+  if (historyList.length > 100) {
+
+    historyList =
+      historyList.slice(0,100);
+
+  }
+
+
+  renderHistory();
+
+}
+
+
+/* ==========================================================
+   แสดงประวัติ
+   ========================================================== */
+
+function renderHistory() {
+
+  const table =
+    document.getElementById(
+      "historyTable"
+    );
+
+
+  if (!historyList.length) {
+
+    table.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty">
+          ยังไม่มีข้อมูล
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+
+  table.innerHTML =
+    historyList
+      .map(
+        (item,index) => {
+
+          return `
+            <tr>
+
+              <td>
+                ${index + 1}
+              </td>
+
+              <td>
+                ${escapeHtml(item.time)}
+              </td>
+
+              <td>
+                ${escapeHtml(
+                  item.employee
+                )}
+                <br>
+                <span class="small">
+                  ${escapeHtml(
+                    item.nickname
+                  )}
+                </span>
+              </td>
+
+              <td>
+                ${escapeHtml(item.type)}
+              </td>
+
+              <td>
+                ${escapeHtml(item.value)}
+              </td>
+
+              <td>
+                ${escapeHtml(item.note)}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* ==========================================================
+   ป้องกัน HTML
+   ========================================================== */
+
+function escapeHtml(value) {
+
+  return String(value)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+
+}
+
+
+/* ==========================================================
+   ตรวจว่ามีกล้องหรือไม่
+   ========================================================== */
+
+function cameraSupported() {
+
+  return !!(
+    navigator.mediaDevices &&
+    navigator.mediaDevices.getUserMedia
+  );
+
+}
+
+
+/* ==========================================================
+   เปิดกล้อง Barcode
+   ========================================================== */
+
+async function startBarcodeCamera() {
+
+  if (!cameraSupported()) {
+
+    showStatus(
+      "barcodeStatus",
+      "อุปกรณ์นี้ไม่รองรับการเปิดกล้อง",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  stopSkuCamera();
+
+
+  try {
+
+    barcodeReader =
+      new ZXing.BrowserMultiFormatReader();
+
+
+    const video =
+      document.getElementById(
+        "barcodeVideo"
+      );
+
+
+    document
+      .getElementById(
+        "barcodeMessage"
+      )
+      .style.display =
+      "none";
+
+
+    barcodeScanning = true;
+
+
+    await barcodeReader.decodeFromConstraints(
+
+      {
+        video: {
+          facingMode: {
+            ideal: "environment"
+          }
+        },
+        audio: false
+      },
+
+      video,
+
+      function(result,error) {
+
+        if (!barcodeScanning) {
+          return;
+        }
+
+
+        if (result) {
+
+          const code =
+            result.getText();
+
+
+          /*
+           * ส่ง Barcode เข้า addBarcode
+           */
+
+          addBarcode(code);
+
+        }
+
+      }
+
+    );
+
+
+    showStatus(
+      "barcodeStatus",
+      "📷 กำลังสแกน Barcode...",
+      "success"
+    );
+
+  }
+  catch(error) {
+
+    console.error(error);
+
+    showStatus(
+      "barcodeStatus",
+      "ไม่สามารถเปิดกล้องได้ กรุณาอนุญาต Camera",
+      "error"
+    );
+
+  }
+
+}
+
+
+/* ==========================================================
+   หยุดกล้อง Barcode
+   ========================================================== */
+
+function stopBarcodeCamera() {
+
+  barcodeScanning = false;
+
+
+  if (barcodeReader) {
+
+    try {
+
+      barcodeReader.reset();
+
+    }
+    catch(e) {}
+
+    barcodeReader = null;
+
+  }
+
+
+  const video =
+    document.getElementById(
+      "barcodeVideo"
+    );
+
+
+  if (video.srcObject) {
+
+    video.srcObject
+      .getTracks()
+      .forEach(
+        track => track.stop()
+      );
+
+    video.srcObject = null;
+
+  }
+
+
+  document
+    .getElementById(
+      "barcodeMessage"
+    )
+    .style.display =
+    "block";
+
+}
+
+
+/* ==========================================================
+   เปิดกล้อง SKU
+   ========================================================== */
+
+async function startSkuCamera() {
+
+  if (!cameraSupported()) {
+
+    showStatus(
+      "skuStatus",
+      "อุปกรณ์นี้ไม่รองรับการเปิดกล้อง",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  if (!currentBarcode) {
+
+    showStatus(
+      "skuStatus",
+      "กรุณาสแกน Barcode ก่อน",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  stopBarcodeCamera();
+
+
+  try {
+
+    skuReader =
+      new ZXing.BrowserMultiFormatReader();
+
+
+    const video =
+      document.getElementById(
+        "skuVideo"
+      );
+
+
+    document
+      .getElementById(
+        "skuMessage"
+      )
+      .style.display =
+      "none";
+
+
+    skuScanning = true;
+
+
+    await skuReader.decodeFromConstraints(
+
+      {
+        video: {
+          facingMode: {
+            ideal: "environment"
+          }
+        },
+        audio: false
+      },
+
+      video,
+
+      function(result,error) {
+
+        if (!skuScanning) {
+          return;
+        }
+
+
+        if (result) {
+
+          const code =
+            result.getText();
+
+
+          addSku(code);
+
+        }
+
+      }
+
+    );
+
+
+    showStatus(
+      "skuStatus",
+      "📷 กำลังสแกน SKU...",
+      "success"
+    );
+
+  }
+  catch(error) {
+
+    console.error(error);
+
+    showStatus(
+      "skuStatus",
+      "ไม่สามารถเปิดกล้องได้ กรุณาอนุญาต Camera",
+      "error"
+    );
+
+  }
+
+}
+
+
+/* ==========================================================
+   หยุดกล้อง SKU
+   ========================================================== */
+
+function stopSkuCamera() {
+
+  skuScanning = false;
+
+
+  if (skuReader) {
+
+    try {
+
+      skuReader.reset();
+
+    }
+    catch(e) {}
+
+    skuReader = null;
+
+  }
+
+
+  const video =
+    document.getElementById(
+      "skuVideo"
+    );
+
+
+  if (video.srcObject) {
+
+    video.srcObject
+      .getTracks()
+      .forEach(
+        track => track.stop()
+      );
+
+    video.srcObject = null;
+
+  }
+
+
+  document
+    .getElementById(
+      "skuMessage"
+    )
+    .style.display =
+    "block";
+
+}
+
+
+/* ==========================================================
+   ปุ่มเปิดกล้อง Barcode
+   ========================================================== */
+
+document
+  .getElementById(
+    "barcodeCameraButton"
+  )
+  .addEventListener(
+    "click",
+    startBarcodeCamera
+  );
+
+
+/* ==========================================================
+   ปุ่มเปิดกล้อง SKU
+   ========================================================== */
+
+document
+  .getElementById(
+    "skuCameraButton"
+  )
+  .addEventListener(
+    "click",
+    startSkuCamera
+  );
+
+
+/* ==========================================================
+   บันทึกข้อมูล
+   ========================================================== */
+
+document
+  .getElementById("saveButton")
+  .addEventListener(
+    "click",
+    saveData
+  );
+
+
+function saveData() {
+
+  if (!currentBarcode) {
+    alert("กรุณาสแกน Barcode ก่อน");
+    return;
+  }
+
+  if (!skuList.length) {
+    alert("กรุณาเพิ่ม SKU อย่างน้อย 1 รายการ");
+    return;
+  }
+
+  // ==========================================
+  // URL Google Apps Script
+  // ==========================================
+
+  const API_URL =
+    "https://script.google.com/macros/s/AKfycbyVzVXB3ZCzOWB9jjoRhdsihS8fYn6krtSD6647G3gyOOGfmzwdyl8WjTb8NRc-Zd88Gg/exec";
+
+  // ==========================================
+  // ข้อมูลพนักงาน
+  // ==========================================
+
+  const employeeParts =
+    document
+      .getElementById("employee")
+      .value
+      .split("|");
+
+  const employee =
+    employeeParts[0] || "";
+
+  const nickname =
+    employeeParts[1] || "";
+
+  // ==========================================
+  // ข้อมูลที่จะส่งไป Google Sheets
+  // ==========================================
+
+  const data = {
+
+    employee: employee,
+
+    nickname: nickname,
+
+    barcode: currentBarcode,
+
+    barcodeTime: currentBarcodeTime,
+
+    skus: [...skuList],
+
+    savedAt: getTime()
+
+  };
+
+  // ==========================================
+  // ป้องกันกดบันทึกซ้ำ
+  // ==========================================
+
+  const saveButton =
+    document.getElementById("saveButton");
+
+  saveButton.disabled = true;
+
+  saveButton.textContent =
+    "⏳ กำลังบันทึก...";
+
+  showStatus(
+    "barcodeStatus",
+    "⏳ กำลังบันทึกข้อมูลลง Google Sheets...",
+    "success"
+  );
+
+  // ==========================================
+  // ส่งข้อมูลไป Google Apps Script
+  // ==========================================
+
+  fetch(API_URL, {
+
+    method: "POST",
+
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+
+    body: JSON.stringify(data)
+
+  })
+
+  .then(function(response) {
+    return response.text();
+  })
+
+  .then(function(result) {
+
+    console.log(
+      "Google Apps Script response:",
+      result
+    );
+
+    showStatus(
+      "barcodeStatus",
+      "✅ บันทึกข้อมูลลง Google Sheets เรียบร้อยแล้ว",
+      "success"
+    );
+
+    alert(
+      "บันทึกข้อมูลสำเร็จ\n\n" +
+      "พนักงาน: " +
+      employee +
+      "\n\n" +
+      "Barcode: " +
+      currentBarcode +
+      "\n\n" +
+      "SKU: " +
+      skuList.length +
+      " รายการ"
+    );
+
+    addHistory(
+      "บันทึก",
+      currentBarcode,
+      "บันทึก SKU " + skuList.length + " รายการ"
+    );
+
+    currentBarcode = "";
+    currentBarcodeTime = "";
+    skuList = [];
+
+    document
+      .getElementById("currentBarcode")
+      .textContent = "-";
+
+    document
+      .getElementById("barcodeTime")
+      .textContent = "-";
+
+    renderSku();
+    updateSaveButton();
+
+    saveButton.disabled = false;
+
+    saveButton.textContent =
+      "💾 บันทึกข้อมูล";
+
+  })
+
+  .catch(function(error) {
+
+    console.error(error);
+
+    showStatus(
+      "barcodeStatus",
+      "❌ ไม่สามารถบันทึกข้อมูลได้ กรุณาตรวจสอบการเชื่อมต่อ",
+      "error"
+    );
+
+    alert(
+      "เกิดข้อผิดพลาดในการบันทึกข้อมูล\n\n" +
+      error.message
+    );
+
+    saveButton.disabled = false;
+
+    saveButton.textContent =
+      "💾 บันทึกข้อมูล";
+
+  });
+
+}
+
+
+/* ==========================================================
+   ระบบเปลี่ยนภาษา
+   ========================================================== */
+
+const translations = {
+
+  th: {
+
+    title:
+      "ระบบสแกน Barcode / SKU"
+
+  },
+
+  zh: {
+
+    title:
+      "Barcode / SKU 扫描系统"
+
+  },
+
+  en: {
+
+    title:
+      "Barcode / SKU Scanning System"
+
+  },
+
+  my: {
+
+    title:
+      "Barcode / SKU စကင်စနစ်"
+
+  }
+
+};
+
+
+document
+  .getElementById("language")
+  .addEventListener(
+    "change",
+    function() {
+
+      const lang =
+        this.value;
+
+      document
+        .querySelectorAll(
+          "[data-lang]"
+        )
+        .forEach(
+          function(el) {
+
+            const key =
+              el.getAttribute(
+                "data-lang"
+              );
+
+            if (
+              translations[lang] &&
+              translations[lang][key]
+            ) {
+
+              el.textContent =
+                translations[lang][key];
+
+            }
+
+          }
+        );
+
+    }
+  );
+
+
+/* ==========================================================
+   เริ่มต้นระบบ
+   ========================================================== */
+
+updateNickname();
+
+renderSku();
+
+renderHistory();
+
+updateSaveButton();
+
+</script>
+
+</body>
+</html>
