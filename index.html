@@ -22,8 +22,7 @@
 body {
   margin: 0;
   padding: 0;
-  font-family:
-    Arial,
+  font-family: Arial,
     "Noto Sans Thai",
     "Noto Sans Myanmar",
     sans-serif;
@@ -254,16 +253,6 @@ th {
   margin-top: 12px;
 }
 
-.info {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-}
-
-.info ol {
-  margin-bottom: 0;
-  padding-left: 22px;
-}
-
 .small {
   font-size: 13px;
   color: #666;
@@ -304,7 +293,6 @@ th {
 
 </style>
 </head>
-
 
 <body>
 
@@ -483,49 +471,8 @@ th {
 
   <div class="nickname">
     ชื่อเล่น:
-    <b id="nickname">ซาเลน</b>
+    <b id="nickname">กัลย์สุดา บุญยืน</b>
   </div>
-
-</div>
-
-
-<!-- =====================================================
-     วิธีใช้งาน
-     ===================================================== -->
-
-<div class="section info">
-
-  <div class="section-title">
-    🔵 วิธีใช้งาน
-  </div>
-
-  <ol>
-
-    <li>
-      สแกน Barcode
-    </li>
-
-    <li>
-      เมื่อสแกนติด กล้องจะปิดอัตโนมัติ
-    </li>
-
-    <li>
-      เปิดกล้อง SKU แล้วสแกน SKU
-    </li>
-
-    <li>
-      เมื่อสแกน SKU ติด กล้องจะปิดอัตโนมัติ
-    </li>
-
-    <li>
-      Barcode 1 ตัว สามารถมีหลาย SKU
-    </li>
-
-    <li>
-      เมื่อเสร็จแล้วกดบันทึกข้อมูล
-    </li>
-
-  </ol>
 
 </div>
 
@@ -1002,7 +949,6 @@ function addBarcode(code) {
   /*
    * ถ้าซ้ำ:
    * ไม่แจ้งเตือน
-   * ไม่เปลี่ยน Barcode ปัจจุบัน
    */
 
   if (
@@ -1288,9 +1234,7 @@ function renderSku() {
         <td
           colspan="4"
           class="empty">
-
           ยังไม่มีรายการ
-
         </td>
       </tr>
     `;
@@ -1622,10 +1566,6 @@ async function startBarcodeCamera() {
   }
 
 
-  /*
-   * ปิดกล้อง SKU ก่อน
-   */
-
   stopSkuCamera();
 
 
@@ -1657,19 +1597,15 @@ async function startBarcodeCamera() {
       .decodeFromConstraints(
 
         {
-
           video: {
-
             facingMode: {
               ideal:
                 "environment"
             }
-
           },
 
           audio:
             false
-
         },
 
         video,
@@ -1694,10 +1630,6 @@ async function startBarcodeCamera() {
               Date.now();
 
 
-            /*
-             * ป้องกันอ่านซ้ำเร็วเกินไป
-             */
-
             if (
               now -
               lastBarcodeScanTime
@@ -1717,10 +1649,6 @@ async function startBarcodeCamera() {
               result.getText();
 
 
-            /*
-             * เพิ่ม Barcode
-             */
-
             const added =
               addBarcode(
                 code
@@ -1728,8 +1656,8 @@ async function startBarcodeCamera() {
 
 
             /*
-             * สำคัญ:
-             * สแกนติดแล้วปิดกล้องทันที
+             * สแกนติดแล้ว
+             * ปิดกล้องทันที
              */
 
             if (added) {
@@ -1868,10 +1796,6 @@ async function startSkuCamera() {
   }
 
 
-  /*
-   * ปิดกล้อง Barcode ก่อน
-   */
-
   stopBarcodeCamera();
 
 
@@ -1903,19 +1827,15 @@ async function startSkuCamera() {
       .decodeFromConstraints(
 
         {
-
           video: {
-
             facingMode: {
               ideal:
                 "environment"
             }
-
           },
 
           audio:
             false
-
         },
 
         video,
@@ -1940,10 +1860,6 @@ async function startSkuCamera() {
               Date.now();
 
 
-            /*
-             * ป้องกันอ่านซ้ำเร็วเกินไป
-             */
-
             if (
               now -
               lastSkuScanTime
@@ -1963,10 +1879,6 @@ async function startSkuCamera() {
               result.getText();
 
 
-            /*
-             * เพิ่ม SKU
-             */
-
             const added =
               addSku(
                 code
@@ -1974,7 +1886,8 @@ async function startSkuCamera() {
 
 
             /*
-             * สแกนติดแล้วปิดกล้อง
+             * สแกนติดแล้ว
+             * ปิดกล้องทันที
              */
 
             if (added) {
@@ -2125,8 +2038,10 @@ function saveData() {
     !currentBarcode
   ) {
 
-    alert(
-      "กรุณาสแกน Barcode ก่อน"
+    showStatus(
+      "barcodeStatus",
+      "กรุณาสแกน Barcode ก่อน",
+      "error"
     );
 
     return;
@@ -2138,8 +2053,10 @@ function saveData() {
     skuList.length === 0
   ) {
 
-    alert(
-      "กรุณาเพิ่ม SKU อย่างน้อย 1 รายการ"
+    showStatus(
+      "skuStatus",
+      "กรุณาเพิ่ม SKU อย่างน้อย 1 รายการ",
+      "error"
     );
 
     return;
@@ -2211,16 +2128,10 @@ function saveData() {
 
   showStatus(
     "barcodeStatus",
-    "⏳ กำลังส่งข้อมูลไป Google Sheets...",
+    "⏳ กำลังบันทึกข้อมูล...",
     "success"
   );
 
-
-  /*
-   * ใช้ text/plain
-   * เพื่อให้เป็น Simple Request
-   * และไม่เกิด CORS preflight
-   */
 
   fetch(
     API_URL,
@@ -2234,10 +2145,8 @@ function saveData() {
 
       headers:
         {
-
           "Content-Type":
             "text/plain;charset=utf-8"
-
         },
 
       body:
@@ -2254,6 +2163,14 @@ function saveData() {
   .then(
     function() {
 
+      /*
+       * เพิ่มประวัติ
+       * 1 Barcode = 1 รายการ
+       */
+
+      addScanHistory();
+
+
       showStatus(
         "barcodeStatus",
         "✅ บันทึกข้อมูลแล้ว",
@@ -2262,15 +2179,7 @@ function saveData() {
 
 
       /*
-       * เพิ่มประวัติ 1 รายการ
-       * ต่อ 1 Barcode
-       */
-
-      addScanHistory();
-
-
-      /*
-       * ล้างรายการปัจจุบัน
+       * ล้างข้อมูลปัจจุบัน
        */
 
       currentBarcode =
@@ -2326,12 +2235,6 @@ function saveData() {
         "barcodeStatus",
         "❌ ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่",
         "error"
-      );
-
-
-      alert(
-        "เกิดข้อผิดพลาดในการส่งข้อมูล\n\n" +
-        error.message
       );
 
 
@@ -2428,7 +2331,7 @@ document
 
 
 /* ==========================================================
-   เริ่มระบบ
+   เริ่มต้นระบบ
    ========================================================== */
 
 updateNickname();
